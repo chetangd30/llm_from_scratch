@@ -1,6 +1,6 @@
 # LLM From Scratch
 
-A collection of hands-on experiments and notebooks documenting my journey of learning Large Language Models (LLMs), from tokenization and inference to embeddings, attention mechanisms, transformers, fine-tuning, and LLM applications.
+A collection of hands-on experiments and notebooks documenting my journey of learning Large Language Models (LLMs), from tokenization and embeddings to recommendation systems, attention mechanisms, transformers, fine-tuning, and LLM applications.
 
 ## Objectives
 
@@ -9,6 +9,7 @@ A collection of hands-on experiments and notebooks documenting my journey of lea
 - Explore transformer architectures
 - Build LLM components from scratch
 - Work with open-source language models
+- Apply embedding techniques to real-world problems
 - Develop practical AI Engineering skills
 
 ## Technologies Used
@@ -18,8 +19,10 @@ A collection of hands-on experiments and notebooks documenting my journey of lea
 - Hugging Face Transformers
 - Google Colab
 - NumPy
+- Pandas
 - Scikit-Learn
 - Sentence Transformers
+- Gensim (Word2Vec)
 
 ---
 
@@ -114,36 +117,6 @@ Different LLMs tokenize the same text differently depending on:
 - Tokenization algorithm
 - Target domain (text, code, multilingual)
 
-### Sample Observation
-
-The word:
-
-```text
-CAPITALIZATION
-```
-
-is tokenized differently across models:
-
-**BERT Uncased**
-
-```text
-capital ##ization
-```
-
-**GPT-2**
-
-```text
-CAP ITAL IZ ATION
-```
-
-**Phi-3**
-
-```text
-C AP IT AL IZ ATION
-```
-
-This demonstrates how tokenizer design affects vocabulary efficiency and model behavior.
-
 ---
 
 ## 4. Contextualized Word Embeddings with DeBERTa
@@ -169,105 +142,130 @@ This demonstrates how tokenizer design affects vocabulary efficiency and model b
 
 Unlike traditional word embeddings such as Word2Vec, GloVe, and FastText, transformer-based models generate contextualized embeddings.
 
-This means the representation of a word depends on the surrounding words in the sentence.
-
-For example:
-
-```text
-I deposited money in the bank.
-```
-
-and
-
-```text
-The fisherman sat on the river bank.
-```
-
-produce different vector representations for the word:
-
-```text
-bank
-```
-
-### Implementation Steps
-
-1. Load the tokenizer
-
-```python
-tokenizer = AutoTokenizer.from_pretrained(
-    "microsoft/deberta-base"
-)
-```
-
-2. Load the pretrained transformer model
-
-```python
-model = AutoModel.from_pretrained(
-    "microsoft/deberta-v3-xsmall"
-)
-```
-
-3. Tokenize input text
-
-```python
-tokens = tokenizer(
-    "Hello world",
-    return_tensors="pt"
-)
-```
-
-4. Generate contextual embeddings
-
-```python
-output = model(**tokens)[0]
-```
-
-### Understanding the Output
-
-Input tokens:
-
-```text
-[CLS]
-Hello
-world
-[SEP]
-```
-
-Output shape:
-
-```python
-torch.Size([1, 4, 384])
-```
-
-Meaning:
-
-```text
-1     -> Batch Size
-4     -> Number of Tokens
-384   -> Embedding Dimensions
-```
-
-Each token is represented by a unique 384-dimensional vector.
+The meaning of a word is influenced by its surrounding context, allowing the same word to have different vector representations in different sentences.
 
 ### Applications
 
-Contextual embeddings are widely used in:
-
 - Semantic Search
-- Text Classification
 - Question Answering
-- Named Entity Recognition (NER)
+- Text Classification
 - Recommendation Systems
 - Retrieval-Augmented Generation (RAG)
-- Modern LLM Applications
+
+---
+
+## 5. Song Recommendation System Using Word2Vec Embeddings
+
+**File:** `05_song_recommendation_word2vec.ipynb`
+
+### Dataset
+
+- Playlist dataset containing user-created music playlists
+- Song metadata including song titles and artists
+
+### Topics Covered
+
+- Word2Vec embeddings
+- Representation learning
+- Recommendation systems
+- Similarity search
+- Collaborative filtering concepts
+- Embedding-based recommendations
+
+### Project Overview
+
+This notebook treats songs as words and playlists as sentences.
+
+Using Word2Vec, songs that frequently appear together in playlists learn similar vector representations.
+
+### Model Training
+
+```python
+model = Word2Vec(
+    playlists,
+    vector_size=32,
+    window=20,
+    negative=50,
+    min_count=1
+)
+```
+
+### Key Idea
+
+Traditional NLP:
+
+```text
+Sentence
+↓
+Words
+↓
+Word Embeddings
+```
+
+Music Recommendation:
+
+```text
+Playlist
+↓
+Songs
+↓
+Song Embeddings
+```
+
+If two songs frequently occur together in playlists, their vectors become similar in embedding space.
+
+### Example Recommendation
+
+Input Song:
+
+```text
+Fade To Black — Metallica
+```
+
+Recommended Songs:
+
+```text
+Run To The Hills — Iron Maiden
+Red Barchetta — Rush
+Unchained — Van Halen
+November Rain — Guns N' Roses
+Rainbow In The Dark — Dio
+```
+
+### Another Example
+
+Input Song:
+
+```text
+California Love — 2Pac
+```
+
+Recommended Songs:
+
+```text
+How We Do — The Game
+If I Ruled The World — Nas
+Sweet Dreams — Beyonce
+Hate It Or Love It — The Game
+Heartless — Kanye West
+```
+
+### Key Learning
+
+- Embeddings are not limited to words
+- Any object appearing in a sequence can be embedded
+- Similar items naturally cluster together in vector space
+- Recommendation systems often rely on embedding similarity
 
 ### Skills Demonstrated
 
-- Transformer Encoders
-- Contextual Embeddings
-- Representation Learning
-- NLP Feature Extraction
-- Hugging Face Models
+- Word2Vec
+- Embedding Learning
+- Recommendation Systems
+- Similarity Search
+- Collaborative Filtering Concepts
+- Gensim
+- Data Processing with Pandas
 
 ---
 
@@ -280,6 +278,7 @@ llm-from-scratch/
 ├── 02_tokenization_and_generation.ipynb
 ├── 03_comparing_llm_tokenizers.ipynb
 ├── 04_contextualized_word_embeddings.ipynb
+├── 05_song_recommendation_word2vec.ipynb
 ├── README.md
 └── requirements.txt
 ```
@@ -292,8 +291,13 @@ llm-from-scratch/
 - Natural Language Processing (NLP)
 - Tokenization
 - Contextualized Embeddings
+- Word Embeddings
 - Transformer Encoders
 - Representation Learning
+- Recommendation Systems
+- Similarity Search
+- Word2Vec
+- Gensim
 - Prompt Engineering
 - Hugging Face Transformers
 - GPU Inference
@@ -305,7 +309,8 @@ llm-from-scratch/
 # Upcoming Topics
 
 - Semantic Similarity
-- Vector Search
+- Sentence Embeddings
+- Vector Databases
 - Attention Mechanism
 - Self-Attention
 - Multi-Head Attention
@@ -325,6 +330,9 @@ llm-from-scratch/
 ✅ Token ID Analysis  
 ✅ Comparing LLM Tokenizers  
 ✅ Contextualized Word Embeddings  
+✅ Word2Vec Embeddings  
+✅ Recommendation Systems Using Embeddings  
+
 
 # References
 
@@ -332,5 +340,7 @@ llm-from-scratch/
 - Hugging Face Transformers Documentation
 - Microsoft Phi-3 Documentation
 - Microsoft DeBERTa Documentation
+- Gensim Documentation
+- Word2Vec Research Paper (Mikolov et al.)
 - OpenAI tiktoken Documentation
 - Google FLAN-T5 Documentation
