@@ -1,15 +1,18 @@
 # LLM From Scratch
 
-A collection of hands-on experiments and notebooks documenting my journey of learning Large Language Models (LLMs), from tokenization and embeddings to recommendation systems, attention mechanisms, transformers, fine-tuning, and LLM applications.
+A collection of hands-on experiments and notebooks documenting my journey of learning Large Language Models (LLMs), from tokenization and embeddings to transformer architecture, text generation, decoding, inference optimization, fine-tuning, and LLM applications.
 
 ## Objectives
 
 - Understand how modern LLMs work internally
 - Learn tokenization and embeddings
-- Explore transformer architectures
+- Understand Transformer inputs and outputs
+- Explore attention mechanisms and Transformer architecture
+- Understand how LLMs generate text token by token
+- Learn how decoding and probability distributions work
+- Understand inference optimization techniques such as KV caching
 - Build LLM components from scratch
 - Work with open-source language models
-- Apply embedding techniques to real-world problems
 - Develop practical AI Engineering skills
 
 ## Technologies Used
@@ -117,6 +120,36 @@ Different LLMs tokenize the same text differently depending on:
 - Tokenization algorithm
 - Target domain (text, code, multilingual)
 
+### Sample Observation
+
+The word:
+
+```text
+CAPITALIZATION
+```
+
+is tokenized differently across models:
+
+**BERT Uncased**
+
+```text
+capital ##ization
+```
+
+**GPT-2**
+
+```text
+CAP ITAL IZ ATION
+```
+
+**Phi-3**
+
+```text
+C AP IT AL IZ ATION
+```
+
+This demonstrates how tokenizer design affects vocabulary efficiency and model behavior.
+
 ---
 
 ## 4. Contextualized Word Embeddings with DeBERTa
@@ -136,19 +169,71 @@ Different LLMs tokenize the same text differently depending on:
 - Token representations
 - Input tokenization
 - Embedding dimensions
-- Understanding transformer outputs
+- Understanding Transformer outputs
 
 ### Key Learning
 
-Unlike traditional word embeddings such as Word2Vec, GloVe, and FastText, transformer-based models generate contextualized embeddings.
+Unlike traditional word embeddings such as Word2Vec, GloVe, and FastText, Transformer-based models generate contextualized embeddings.
 
-The meaning of a word is influenced by its surrounding context, allowing the same word to have different vector representations in different sentences.
+This means the representation of a word depends on the surrounding words in the sentence.
+
+For example:
+
+```text
+I deposited money in the bank.
+```
+
+and:
+
+```text
+The fisherman sat on the river bank.
+```
+
+produce different contextual representations for the word:
+
+```text
+bank
+```
+
+### Output Example
+
+For:
+
+```text
+Hello world
+```
+
+the model produces:
+
+```text
+[CLS]
+Hello
+world
+[SEP]
+```
+
+with an output shape of:
+
+```text
+torch.Size([1, 4, 384])
+```
+
+Meaning:
+
+```text
+1   -> Batch size
+4   -> Number of tokens
+384 -> Embedding dimensions
+```
 
 ### Applications
+
+Contextual embeddings can be used for:
 
 - Semantic Search
 - Question Answering
 - Text Classification
+- Named Entity Recognition
 - Recommendation Systems
 - Retrieval-Augmented Generation (RAG)
 
@@ -161,7 +246,7 @@ The meaning of a word is influenced by its surrounding context, allowing the sam
 ### Dataset
 
 - Playlist dataset containing user-created music playlists
-- Song metadata including song titles and artists
+- Song metadata containing song titles and artists
 
 ### Topics Covered
 
@@ -174,9 +259,21 @@ The meaning of a word is influenced by its surrounding context, allowing the sam
 
 ### Project Overview
 
-This notebook treats songs as words and playlists as sentences.
+This notebook demonstrates how Word2Vec can be applied beyond traditional Natural Language Processing.
 
-Using Word2Vec, songs that frequently appear together in playlists learn similar vector representations.
+Instead of treating words as tokens:
+
+```text
+Sentence -> Words
+```
+
+songs are treated as tokens:
+
+```text
+Playlist -> Songs
+```
+
+Songs that frequently occur together in playlists learn similar vector representations.
 
 ### Model Training
 
@@ -190,39 +287,15 @@ model = Word2Vec(
 )
 ```
 
-### Key Idea
-
-Traditional NLP:
-
-```text
-Sentence
-↓
-Words
-↓
-Word Embeddings
-```
-
-Music Recommendation:
-
-```text
-Playlist
-↓
-Songs
-↓
-Song Embeddings
-```
-
-If two songs frequently occur together in playlists, their vectors become similar in embedding space.
-
 ### Example Recommendation
 
-Input Song:
+Input:
 
 ```text
 Fade To Black — Metallica
 ```
 
-Recommended Songs:
+Recommended songs:
 
 ```text
 Run To The Hills — Iron Maiden
@@ -234,13 +307,13 @@ Rainbow In The Dark — Dio
 
 ### Another Example
 
-Input Song:
+Input:
 
 ```text
 California Love — 2Pac
 ```
 
-Recommended Songs:
+Recommended songs:
 
 ```text
 How We Do — The Game
@@ -253,19 +326,211 @@ Heartless — Kanye West
 ### Key Learning
 
 - Embeddings are not limited to words
-- Any object appearing in a sequence can be embedded
-- Similar items naturally cluster together in vector space
-- Recommendation systems often rely on embedding similarity
+- Sequential data can be represented using embedding techniques
+- Items appearing in similar contexts can develop similar vector representations
+- Embedding similarity can be used to build recommendation systems
 
-### Skills Demonstrated
+---
 
-- Word2Vec
-- Embedding Learning
-- Recommendation Systems
-- Similarity Search
-- Collaborative Filtering Concepts
-- Gensim
-- Data Processing with Pandas
+## 6. Transformer Inputs, Outputs, Decoding and KV Cache
+
+**File:** `06_transformer_inputs_outputs_and_kv_cache.ipynb`
+
+### Topics Covered
+
+- Loading a pretrained Phi-3 model
+- Transformer model architecture
+- Transformer inputs and outputs
+- Hidden states
+- Embedding dimensions
+- Language model head (`lm_head`)
+- Logits
+- Token probability selection
+- Greedy decoding
+- Autoregressive text generation
+- Key-Value (KV) caching
+- Generation performance optimization
+
+### Loading the Model
+
+The notebook loads Microsoft's:
+
+```text
+microsoft/Phi-3-mini-4k-instruct
+```
+
+using Hugging Face Transformers.
+
+The model and tokenizer are loaded separately:
+
+```python
+tokenizer = AutoTokenizer.from_pretrained(
+    "microsoft/Phi-3-mini-4k-instruct"
+)
+
+model = AutoModelForCausalLM.from_pretrained(
+    "microsoft/Phi-3-mini-4k-instruct",
+    device_map="cuda",
+    torch_dtype="auto"
+)
+```
+
+### Understanding the Transformer Output
+
+The Phi-3 model contains:
+
+- Token embeddings
+- 32 Transformer decoder layers
+- Self-attention layers
+- MLP layers
+- RMS normalization
+- Language model head
+
+The model's hidden representation has a dimension of:
+
+```text
+3072
+```
+
+For example:
+
+```text
+model_output.shape
+torch.Size([1, 6, 3072])
+```
+
+Meaning:
+
+```text
+1    -> Batch size
+6    -> Number of input tokens
+3072 -> Hidden dimension
+```
+
+### Understanding the Language Model Head
+
+The Transformer produces hidden states, but these are not directly token predictions.
+
+The hidden states are passed through the language model head:
+
+```python
+lm_head_output = model.lm_head(model_output[0])
+```
+
+The resulting shape is:
+
+```text
+torch.Size([1, 6, 32064])
+```
+
+Meaning:
+
+```text
+1     -> Batch size
+6     -> Number of tokens
+32064 -> Vocabulary size
+```
+
+The model produces a score (logit) for every possible token in its vocabulary.
+
+### Choosing the Next Token
+
+For the prompt:
+
+```text
+The capital of France is
+```
+
+the model produces logits for the next token.
+
+The highest-scoring token is selected:
+
+```python
+token_id = lm_head_output[0, -1].argmax(-1)
+```
+
+which produces:
+
+```text
+Paris
+```
+
+This demonstrates **greedy decoding**, where the token with the highest predicted score is selected at each generation step.
+
+### Generation Flow
+
+The process can be represented as:
+
+```text
+Input Text
+    ↓
+Tokenizer
+    ↓
+Token IDs
+    ↓
+Token Embeddings
+    ↓
+Transformer Layers
+    ↓
+Hidden States
+    ↓
+Language Model Head
+    ↓
+Logits
+    ↓
+Token Selection
+    ↓
+Next Token
+    ↓
+Repeat
+```
+
+This is the basic autoregressive generation process used by causal language models.
+
+### KV Cache
+
+The notebook also explores **Key-Value (KV) caching**, an important optimization used during autoregressive generation.
+
+Without caching, the model repeatedly recomputes attention information for previously processed tokens.
+
+With caching:
+
+```text
+Previous Key/Value states
+          ↓
+      KV Cache
+          ↓
+Reuse during next token generation
+```
+
+This significantly reduces redundant computation during generation.
+
+### Performance Comparison
+
+For generating 100 new tokens, the notebook measured approximately:
+
+```text
+KV Cache Enabled:
+~6.66 seconds
+
+KV Cache Disabled:
+~21.9 seconds
+```
+
+The exact timings depend on GPU availability, system load, and runtime conditions, but the experiment demonstrates the significant performance benefit of caching.
+
+### Key Learning
+
+This notebook provides a deeper understanding of what happens inside a causal Transformer after the tokenizer has converted text into token IDs.
+
+It demonstrates:
+
+- How token IDs enter the Transformer
+- How hidden states are produced
+- How the `lm_head` converts hidden states into vocabulary logits
+- How the next token is selected
+- How autoregressive generation works
+- Why KV caching makes generation faster
 
 ---
 
@@ -279,6 +544,7 @@ llm-from-scratch/
 ├── 03_comparing_llm_tokenizers.ipynb
 ├── 04_contextualized_word_embeddings.ipynb
 ├── 05_song_recommendation_word2vec.ipynb
+├── 06_transformer_inputs_outputs_and_kv_cache.ipynb
 ├── README.md
 └── requirements.txt
 ```
@@ -290,36 +556,27 @@ llm-from-scratch/
 - Large Language Models (LLMs)
 - Natural Language Processing (NLP)
 - Tokenization
+- Subword Tokenization
 - Contextualized Embeddings
+- Word2Vec
 - Word Embeddings
-- Transformer Encoders
 - Representation Learning
 - Recommendation Systems
 - Similarity Search
-- Word2Vec
-- Gensim
-- Prompt Engineering
+- Transformer Encoders
+- Transformer Decoders
+- Self-Attention Concepts
+- Hidden States
+- Logits
+- Language Model Heads
+- Greedy Decoding
+- Autoregressive Generation
+- KV Caching
 - Hugging Face Transformers
+- PyTorch
 - GPU Inference
 - Python Development
 - Model Exploration and Analysis
-
----
-
-# Upcoming Topics
-
-- Semantic Similarity
-- Sentence Embeddings
-- Vector Databases
-- Attention Mechanism
-- Self-Attention
-- Multi-Head Attention
-- Transformer Architecture
-- Positional Encodings
-- Fine-Tuning
-- LoRA
-- Retrieval-Augmented Generation (RAG)
-- Building a GPT Model from Scratch
 
 ---
 
@@ -332,15 +589,10 @@ llm-from-scratch/
 ✅ Contextualized Word Embeddings  
 ✅ Word2Vec Embeddings  
 ✅ Recommendation Systems Using Embeddings  
+✅ Transformer Inputs and Outputs  
+✅ Hidden States and Logits  
+✅ Greedy Decoding  
+✅ Autoregressive Text Generation  
+✅ KV Cache Fundamentals  
 
 
-# References
-
-- Building a Large Language Model (From Scratch) — Sebastian Raschka
-- Hugging Face Transformers Documentation
-- Microsoft Phi-3 Documentation
-- Microsoft DeBERTa Documentation
-- Gensim Documentation
-- Word2Vec Research Paper (Mikolov et al.)
-- OpenAI tiktoken Documentation
-- Google FLAN-T5 Documentation
