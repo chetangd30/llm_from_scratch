@@ -1,6 +1,6 @@
 # LLM From Scratch
 
-A collection of hands-on experiments and notebooks documenting my journey of learning Large Language Models (LLMs), from tokenization and embeddings to transformer architecture, text generation, decoding, text classification, inference optimization, fine-tuning, and LLM applications.
+A collection of hands-on experiments and notebooks documenting my journey of learning Large Language Models (LLMs), from tokenization and embeddings to transformer architecture, text generation, decoding, text classification, clustering, topic modeling, inference optimization, fine-tuning, and LLM applications.
 
 ## Objectives
 
@@ -12,6 +12,11 @@ A collection of hands-on experiments and notebooks documenting my journey of lea
 - Learn how decoding and probability distributions work
 - Apply embeddings to real-world machine learning problems
 - Explore text classification using representation and generative models
+- Understand text clustering and topic modeling
+- Learn how semantic embeddings can be clustered
+- Explore BERTopic and its modular architecture
+- Understand dimensionality reduction techniques
+- Explore topic representation models
 - Understand inference optimization techniques such as KV caching
 - Build LLM components from scratch
 - Work with open-source language models
@@ -22,13 +27,20 @@ A collection of hands-on experiments and notebooks documenting my journey of lea
 - Python
 - PyTorch
 - Hugging Face Transformers
+- Hugging Face Datasets
 - Google Colab
 - NumPy
 - Pandas
 - Scikit-Learn
 - Sentence Transformers
 - Gensim (Word2Vec)
-- Hugging Face Datasets
+- UMAP
+- HDBSCAN
+- BERTopic
+- OpenAI API
+- Matplotlib
+- DataMapPlot
+- WordCloud
 
 ---
 
@@ -478,7 +490,7 @@ text
 label
 ```
 
-features. :contentReference[oaicite:4]{index=4}
+features.
 
 The task is binary sentiment classification:
 
@@ -502,7 +514,7 @@ The task is binary sentiment classification:
 - Generative LLM classification
 - Model evaluation
 
-### 7.1 Task-Specific Sentiment Model
+### Task-Specific Sentiment Model
 
 The notebook uses:
 
@@ -510,24 +522,18 @@ The notebook uses:
 cardiffnlp/twitter-roberta-base-sentiment-latest
 ```
 
-with a Hugging Face text-classification pipeline. :contentReference[oaicite:5]{index=5}
-
-The model is evaluated across the test dataset and predictions are compared against the true labels. :contentReference[oaicite:6]{index=6}
+with a Hugging Face text-classification pipeline.
 
 ### Performance
 
-The task-specific sentiment model achieved approximately:
+Approximate test performance:
 
 ```text
 Accuracy: 80%
 F1 Score: 0.80
 ```
 
-on the test set. :contentReference[oaicite:7]{index=7}
-
----
-
-### 7.2 Classification Using Sentence Embeddings
+### Sentence Embeddings + Logistic Regression
 
 The notebook uses:
 
@@ -535,187 +541,93 @@ The notebook uses:
 sentence-transformers/all-mpnet-base-v2
 ```
 
-to convert movie reviews into numerical embeddings. :contentReference[oaicite:8]{index=8}
+to convert movie reviews into embeddings.
 
-The resulting training representation has:
-
-```text
-8,530 documents
-768 embedding dimensions
-```
+The resulting embeddings have:
 
 ```text
-(8530, 768)
+8530 documents
+768 dimensions
 ```
 
-### Logistic Regression
+A Logistic Regression classifier is then trained on these embeddings.
 
-A Logistic Regression classifier is trained on the generated embeddings:
-
-```python
-clf = LogisticRegression(random_state=42)
-
-clf.fit(
-    train_embeddings,
-    data["train"]["label"]
-)
-```
-
-The classifier achieves approximately:
+Approximate performance:
 
 ```text
 Accuracy: 85%
 F1 Score: 0.85
 ```
 
-on the test set. :contentReference[oaicite:9]{index=9} :contentReference[oaicite:10]{index=10}
+### Classification Using Cosine Similarity
 
-### Key Insight
+The notebook also averages embeddings for each target class and compares test embeddings with these class representations using cosine similarity.
 
-A pretrained embedding model can be combined with a traditional machine learning classifier.
-
-```text
-Movie Review
-     ↓
-Sentence Transformer
-     ↓
-Embedding
-     ↓
-Logistic Regression
-     ↓
-Sentiment Prediction
-```
-
----
-
-### 7.3 Classification Using Cosine Similarity
-
-Instead of training a classifier, the notebook also averages embeddings for each target class and compares test embeddings against these class representations using cosine similarity. :contentReference[oaicite:11]{index=11}
-
-This approach achieves approximately:
+Approximate performance:
 
 ```text
 Accuracy: 84%
 F1 Score: 0.84
 ```
 
-on the test set. :contentReference[oaicite:12]{index=12}
+### Zero-Shot Classification
 
-This demonstrates that embeddings themselves can be used for classification without necessarily training a separate classifier.
-
----
-
-### 7.4 Zero-Shot Classification with Embeddings
-
-The notebook creates embeddings for text labels:
+The notebook creates embeddings for:
 
 ```text
 A negative review
 A positive review
 ```
 
-and compares the test document embeddings with these label embeddings using cosine similarity. :contentReference[oaicite:13]{index=13}
+and compares test document embeddings against these label embeddings using cosine similarity.
 
-The approach achieves approximately:
+Approximate performance:
 
 ```text
 Accuracy: 78%
 F1 Score: 0.78
 ```
 
-on the test set. :contentReference[oaicite:14]{index=14}
+### Generative Classification with FLAN-T5
 
-### Key Concept
-
-The model does not receive examples explicitly labeled for the classification task. Instead, the input is compared semantically against natural-language descriptions of the possible classes.
-
----
-
-### 7.5 Generative Classification with FLAN-T5
-
-The notebook also explores classification using the encoder-decoder model:
+The notebook uses:
 
 ```text
 google/flan-t5-small
 ```
 
-through the `text2text-generation` pipeline. :contentReference[oaicite:15]{index=15}
-
-A prompt is created:
+with a prompt such as:
 
 ```text
 Is the following sentence positive or negative?
 ```
 
-and combined with each review before generation. :contentReference[oaicite:16]{index=16}
+The generated response is converted into a classification label.
 
-The generated output is converted into a classification label:
-
-```text
-negative -> 0
-positive -> 1
-```
-
-The model achieves approximately:
+Approximate performance:
 
 ```text
 Accuracy: 84%
 F1 Score: 0.84
 ```
 
-on the test set. :contentReference[oaicite:17]{index=17}
-
-### Key Concept
-
-Instead of directly predicting a classification label, a generative model produces the answer as text.
-
-```text
-Movie Review
-     ↓
-Prompt
-     ↓
-FLAN-T5
-     ↓
-"positive" / "negative"
-     ↓
-Classification Label
-```
-
----
-
-### 7.6 LLM-Based Classification
+### LLM-Based Classification
 
 The notebook also demonstrates prompt-based classification using an OpenAI model.
 
-The prompt instructs the model to return:
+The model is instructed to return:
 
 ```text
 1 -> Positive
 0 -> Negative
 ```
 
-for a given movie review. :contentReference[oaicite:18]{index=18} :contentReference[oaicite:19]{index=19}
-
-The notebook also demonstrates evaluating the model across the complete test dataset. The recorded experiment achieved approximately:
+Approximate performance from the recorded experiment:
 
 ```text
 Accuracy: 91%
 F1 Score: 0.91
 ```
-
-on the 1,066-example test set. :contentReference[oaicite:20]{index=20} :contentReference[oaicite:21]{index=21}
-
-### Important Note
-
-The OpenAI section requires an API key to run. The notebook uses a placeholder:
-
-```python
-client = openai.OpenAI(
-    api_key="YOUR_KEY_HERE"
-)
-```
-
-so API credentials should never be committed to GitHub. :contentReference[oaicite:22]{index=22}
 
 ### Overall Classification Comparison
 
@@ -730,7 +642,7 @@ so API credentials should never be committed to GitHub. :contentReference[oaicit
 
 ### Key Learning
 
-This notebook demonstrates that text classification can be approached in several different ways:
+Text classification can be approached using multiple architectures:
 
 ```text
                     Text Classification
@@ -749,27 +661,565 @@ RoBERTa        + Classifier
              Zero-Shot
 ```
 
-The experiments demonstrate the trade-offs between task-specific models, reusable embeddings, traditional machine learning classifiers, zero-shot approaches, and generative LLMs.
+---
+
+# 8. Text Clustering and Topic Modeling
+
+**File:** `08_text_clustering_and_topic_modeling.ipynb`
+
+### Dataset
+
+This notebook works with the **ArXiv NLP dataset**, containing research paper abstracts and titles. The dataset is loaded from Hugging Face:
+
+```text
+maartengr/arxiv_nlp
+```
+
+The notebook extracts:
+
+```text
+Abstracts
+Titles
+```
+
+as the primary text data. :contentReference[oaicite:2]{index=2}
+
+### Topics Covered
+
+- Text clustering
+- Document embeddings
+- Semantic clustering
+- Dimensionality reduction
+- UMAP
+- HDBSCAN
+- BERTopic
+- Topic modeling
+- Topic representations
+- c-TF-IDF
+- Topic similarity search
+- Topic visualization
+- KeyBERTInspired representations
+- Maximal Marginal Relevance
+- Generative topic labeling
+- FLAN-T5
+- OpenAI-based topic representation
+- DataMapPlot
+- Word clouds
 
 ---
 
-# Repository Structure
+## 8.1 Creating Document Embeddings
+
+The first step is to convert each research paper abstract into a numerical representation.
+
+The notebook uses:
 
 ```text
-llm-from-scratch/
-│
-├── 01_phi3_text_generation.ipynb
-├── 02_tokenization_and_generation.ipynb
-├── 03_comparing_llm_tokenizers.ipynb
-├── 04_contextualized_word_embeddings.ipynb
-├── 05_song_recommendation_word2vec.ipynb
-├── 06_transformer_inputs_outputs_and_kv_cache.ipynb
-├── 07_text_classification.ipynb
-├── README.md
-└── requirements.txt
+thenlper/gte-small
+```
+
+through Sentence Transformers. :contentReference[oaicite:3]{index=3}
+
+The resulting embeddings have:
+
+```text
+44,949 documents
+384 dimensions
+```
+
+```text
+(44949, 384)
+```
+
+This transforms the textual documents into vectors that can be compared based on semantic similarity. :contentReference[oaicite:4]{index=4}
+
+### Pipeline
+
+```text
+Research Abstract
+       ↓
+Sentence Transformer
+       ↓
+384-Dimensional Embedding
+       ↓
+Semantic Representation
 ```
 
 ---
+
+## 8.2 Dimensionality Reduction with UMAP
+
+The 384-dimensional embeddings are reduced to 5 dimensions using UMAP.
+
+```python
+umap_model = UMAP(
+    n_components=5,
+    min_dist=0.0,
+    metric='cosine',
+    random_state=42
+)
+```
+
+The reduced representations are then used for clustering. :contentReference[oaicite:5]{index=5}
+
+### Why Dimensionality Reduction?
+
+High-dimensional embeddings are difficult to cluster and visualize directly.
+
+UMAP provides a lower-dimensional representation while attempting to preserve meaningful relationships between documents.
+
+```text
+384 Dimensions
+      ↓
+     UMAP
+      ↓
+5 Dimensions
+```
+
+---
+
+## 8.3 Clustering with HDBSCAN
+
+HDBSCAN is then applied to the reduced embeddings.
+
+```python
+hdbscan_model = HDBSCAN(
+    min_cluster_size=50,
+    metric='euclidean',
+    cluster_selection_method='eom'
+)
+```
+
+The experiment generates:
+
+```text
+156 clusters
+```
+
+including the outlier cluster represented by `-1`. :contentReference[oaicite:6]{index=6}
+
+### Clustering Pipeline
+
+```text
+Documents
+    ↓
+Embeddings
+    ↓
+UMAP
+    ↓
+Reduced Embeddings
+    ↓
+HDBSCAN
+    ↓
+Clusters
+```
+
+---
+
+## 8.4 Inspecting Clusters
+
+The notebook manually inspects documents belonging to a specific cluster.
+
+For example, documents in cluster `0` contain research related to:
+
+```text
+Sign Language
+Sign Language Translation
+Language Recognition
+Animation and Synthesis
+```
+
+This demonstrates how semantic embeddings allow documents discussing similar subjects to be grouped together. :contentReference[oaicite:7]{index=7}
+
+---
+
+## 8.5 Visualizing Document Clusters
+
+The embeddings are further reduced to two dimensions using UMAP:
+
+```python
+UMAP(
+    n_components=2,
+    min_dist=0.0,
+    metric='cosine',
+    random_state=42
+)
+```
+
+This allows the clusters to be plotted visually. :contentReference[oaicite:8]{index=8}
+
+The notebook creates a scatter plot separating:
+
+```text
+Clusters
+Outliers
+```
+
+to provide a visual representation of the document distribution. :contentReference[oaicite:9]{index=9}
+
+---
+
+# 8.6 From Text Clustering to Topic Modeling
+
+After creating clusters, the notebook moves from simply grouping documents to identifying what each cluster is about.
+
+This is where **BERTopic** is introduced. :contentReference[oaicite:10]{index=10}
+
+### BERTopic
+
+BERTopic is used as a modular topic-modeling framework:
+
+```python
+topic_model = BERTopic(
+    embedding_model=embedding_model,
+    umap_model=umap_model,
+    hdbscan_model=hdbscan_model,
+    verbose=True
+)
+```
+
+The model is then trained on the research abstracts and their embeddings. :contentReference[oaicite:11]{index=11}
+
+### Key Concept
+
+The complete process becomes:
+
+```text
+Documents
+    ↓
+Embeddings
+    ↓
+UMAP
+    ↓
+HDBSCAN
+    ↓
+Clusters
+    ↓
+Topic Representation
+    ↓
+Human-Interpretable Topics
+```
+
+---
+
+## 8.7 Exploring Topics
+
+BERTopic produces topic information containing:
+
+- Topic ID
+- Document count
+- Topic name
+- Topic representation
+- Representative documents
+
+The notebook generates 156 topic entries, including an outlier topic. :contentReference[oaicite:12]{index=12}
+
+Example topics include:
+
+```text
+Speech / ASR / Recognition
+Medical / Clinical / Biomedical
+Sentiment Analysis
+Machine Translation
+Summarization
+Prompt Optimization
+Sentence Embeddings
+```
+
+This demonstrates how clustering can be transformed into meaningful semantic topics.
+
+---
+
+## 8.8 Topic Keywords and c-TF-IDF
+
+The `get_topic()` function can be used to inspect the most important words associated with a topic.
+
+For example, one topic contains keywords such as:
+
+```text
+speech
+asr
+recognition
+acoustic
+speaker
+audio
+```
+
+along with their corresponding weights. :contentReference[oaicite:13]{index=13}
+
+BERTopic uses class-based TF-IDF (c-TF-IDF) to help identify representative words for each topic.
+
+---
+
+## 8.9 Searching for Topics
+
+The notebook demonstrates semantic topic search using:
+
+```python
+topic_model.find_topics("topic modeling")
+```
+
+The search returns topics ranked according to similarity to the query.
+
+For example:
+
+```text
+Topic 22
+Similarity ≈ 0.95
+```
+
+The topic contains keywords related to:
+
+```text
+topic
+topics
+LDA
+latent
+document
+modeling
+Dirichlet
+word
+allocation
+```
+
+demonstrating semantic retrieval of related topics. :contentReference[oaicite:14]{index=14}
+
+---
+
+# 8.10 BERTopic Visualizations
+
+The notebook explores multiple BERTopic visualization techniques.
+
+### Document Visualization
+
+```python
+topic_model.visualize_documents(...)
+```
+
+This visualizes documents and their relationship to topics. :contentReference[oaicite:15]{index=15}
+
+### Topic Bar Chart
+
+```python
+topic_model.visualize_barchart()
+```
+
+Displays important keywords associated with topics.
+
+### Topic Heatmap
+
+```python
+topic_model.visualize_heatmap(n_clusters=30)
+```
+
+Visualizes relationships between topics.
+
+### Topic Hierarchy
+
+```python
+topic_model.visualize_hierarchy()
+```
+
+Visualizes potential hierarchical relationships between topics. :contentReference[oaicite:16]{index=16}
+
+---
+
+# 8.11 Topic Representation Models
+
+BERTopic allows topic representations to be updated after training.
+
+This notebook explores multiple representation techniques. :contentReference[oaicite:17]{index=17}
+
+### KeyBERTInspired
+
+The notebook uses:
+
+```python
+KeyBERTInspired()
+```
+
+to update the topic representations. :contentReference[oaicite:18]{index=18}
+
+This produces more semantically meaningful keywords for topics.
+
+Example:
+
+```text
+Original:
+speech | asr | recognition | end | acoustic
+
+Updated:
+speech | encoder | phonetic | language | translation
+```
+
+---
+
+## 8.12 Maximal Marginal Relevance
+
+The notebook also explores:
+
+```python
+MaximalMarginalRelevance(diversity=0.5)
+```
+
+as a topic representation model. :contentReference[oaicite:19]{index=19}
+
+The goal is to improve the diversity of the selected topic keywords instead of returning highly repetitive terms.
+
+---
+
+# 8.13 Topic Representation with FLAN-T5
+
+The notebook uses:
+
+```text
+google/flan-t5-small
+```
+
+to generate human-readable topic descriptions.
+
+A prompt is constructed using:
+
+```text
+Documents
++
+Topic Keywords
+↓
+FLAN-T5
+↓
+Topic Description
+```
+
+The generated representations include descriptions such as:
+
+```text
+Speech-to-description
+Science/Tech
+Review
+Attention-based neural machine translation
+Summarization
+```
+
+The notebook uses the BERTopic `TextGeneration` representation model for this process. :contentReference[oaicite:20]{index=20} :contentReference[oaicite:21]{index=21}
+
+### Key Learning
+
+A generative model can be used to convert machine-generated topic keywords into more understandable natural-language topic descriptions.
+
+---
+
+# 8.14 Topic Representation with OpenAI
+
+The notebook also demonstrates using an OpenAI model to generate concise topic labels.
+
+The prompt instructs the model to generate:
+
+```text
+topic: <short topic label>
+```
+
+based on the documents and keywords associated with each topic. :contentReference[oaicite:22]{index=22}
+
+Example generated topic labels include:
+
+```text
+Leveraging External Data for Improving Low-Resource...
+Improved Representation Learning for Biomedical...
+Advancements in Aspect-Based Sentiment Analysis
+Neural Machine Translation Enhancements
+Document Summarization Techniques
+```
+
+This demonstrates how an LLM can be used as a **topic representation layer** on top of an unsupervised clustering pipeline. :contentReference[oaicite:23]{index=23}
+
+---
+
+# 8.15 DataMapPlot Visualization
+
+The notebook also creates a document-level visualization using DataMapPlot:
+
+```python
+topic_model.visualize_document_datamap(...)
+```
+
+The visualization maps documents and topics into a two-dimensional space and can be saved as:
+
+```text
+datamapplot.png
+```
+
+This provides another way of visually exploring relationships between documents and topics. :contentReference[oaicite:24]{index=24}
+
+---
+
+# 8.16 Topic Word Cloud
+
+The notebook includes a bonus WordCloud visualization.
+
+First, the number of topic words is increased:
+
+```python
+topic_model.update_topics(
+    abstracts,
+    top_n_words=500
+)
+```
+
+Then the most important words for a topic are visualized as a word cloud. :contentReference[oaicite:25]{index=25}
+
+### Pipeline
+
+```text
+Topic
+ ↓
+Important Words
+ ↓
+Word Frequencies
+ ↓
+WordCloud
+ ↓
+Visual Topic Representation
+```
+
+---
+
+# Key Learning
+
+This notebook demonstrates a complete modern text-clustering and topic-modeling pipeline:
+
+```text
+             Research Documents
+                     ↓
+             Sentence Embeddings
+                     ↓
+              384-D Vectors
+                     ↓
+                  UMAP
+                     ↓
+              Reduced Vectors
+                     ↓
+                 HDBSCAN
+                     ↓
+                 Clusters
+                     ↓
+                BERTopic
+                     ↓
+            Topic Representations
+                     ↓
+       ┌─────────────┼─────────────┐
+       ↓             ↓             ↓
+    KeyBERT        MMR          LLMs
+       ↓             ↓        ┌────┴────┐
+   Keywords      Diverse      ↓         ↓
+                 Keywords   FLAN-T5   OpenAI
+       │             │         │         │
+       └─────────────┴─────────┴─────────┘
+                     ↓
+            Human-Readable Topics
+```
+
+The notebook demonstrates how modern embedding models and clustering algorithms can be combined with generative LLMs to transform thousands of unstructured documents into interpretable topics.
+
 
 # Skills Demonstrated
 
@@ -777,60 +1227,36 @@ llm-from-scratch/
 - Natural Language Processing (NLP)
 - Text Classification
 - Sentiment Analysis
-- Tokenization
-- Subword Tokenization
-- Contextualized Embeddings
+- Text Clustering
+- Topic Modeling
+- Document Embeddings
 - Sentence Embeddings
+- Contextualized Embeddings
 - Word2Vec
 - Representation Learning
-- Recommendation Systems
-- Similarity Search
+- Semantic Similarity
+- Semantic Search
 - Cosine Similarity
 - Zero-Shot Classification
 - Logistic Regression
-- Transformer Encoders
-- Transformer Decoders
-- Self-Attention Concepts
-- Hidden States
-- Logits
-- Language Model Heads
-- Greedy Decoding
-- Autoregressive Generation
-- KV Caching
+- Dimensionality Reduction
+- UMAP
+- HDBSCAN
+- BERTopic
+- c-TF-IDF
+- Topic Representation
+- KeyBERTInspired
+- Maximal Marginal Relevance
+- Generative Topic Modeling
 - Prompt Engineering
 - Hugging Face Transformers
 - Hugging Face Datasets
 - Sentence Transformers
 - Scikit-Learn
+- Gensim
 - PyTorch
+- OpenAI API
 - GPU Inference
 - Python Development
 - Model Evaluation
-
----
-
-# Learning Progress
-
-✅ Running Open-Source LLMs  
-✅ Tokenization Fundamentals  
-✅ Token ID Analysis  
-✅ Comparing LLM Tokenizers  
-✅ Contextualized Word Embeddings  
-✅ Word2Vec Embeddings  
-✅ Recommendation Systems Using Embeddings  
-✅ Transformer Inputs and Outputs  
-✅ Hidden States and Logits  
-✅ Greedy Decoding  
-✅ Autoregressive Text Generation  
-✅ KV Cache Fundamentals  
-✅ Text Classification  
-✅ Sentiment Analysis  
-✅ Sentence Embedding Classification  
-✅ Zero-Shot Classification  
-✅ Generative Classification  
-✅ LLM-Based Classification  
-
-
-- OpenAI Documentation
-- OpenAI tiktoken Documentation
-- Google FLAN-T5 Documentation
+- Data Visualization
